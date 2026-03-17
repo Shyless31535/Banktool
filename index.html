@@ -1,0 +1,808 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BankTool Loan Calculator</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --line: #d9e0ea;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --accent: #1d4ed8;
+      --accent-2: #eff6ff;
+      --ok: #065f46;
+      --warn: #92400e;
+      --shadow: 0 10px 25px rgba(0,0,0,0.08);
+      --radius: 16px;
+    }* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.wrap {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 18px;
+}
+
+h1 {
+  margin: 0 0 6px;
+  font-size: 28px;
+}
+
+.sub {
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tab-btn {
+  border: 1px solid var(--line);
+  background: white;
+  padding: 10px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.tab-btn.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.panel {
+  display: none;
+}
+
+.panel.active {
+  display: block;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 18px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+
+.card h2 {
+  margin-top: 0;
+  font-size: 20px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field.full { grid-column: 1 / -1; }
+
+label {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+input, select, button, textarea {
+  font: inherit;
+}
+
+input, select, textarea {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  color: var(--text);
+  min-width: 0;
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+button {
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: white;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+button.secondary {
+  background: white;
+  color: var(--accent);
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.stat {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+  background: #fff;
+}
+
+.stat .k {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 5px;
+  font-weight: 700;
+}
+
+.stat .v {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.note {
+  margin-top: 10px;
+  padding: 12px;
+  background: var(--accent-2);
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  color: #1e3a8a;
+  font-size: 14px;
+}
+
+.warn {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: var(--warn);
+}
+
+.ok {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: var(--ok);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+th, td {
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+th {
+  background: #f8fafc;
+  font-weight: 700;
+}
+
+td:first-child, th:first-child,
+td:nth-child(2), th:nth-child(2) {
+  text-align: left;
+}
+
+.table-wrap {
+  overflow: auto;
+  max-height: 70vh;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+
+.mono { font-family: Consolas, monospace; }
+
+@media (max-width: 900px) {
+  .grid { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+}
+
+@media print {
+  body { background: white; }
+  .tabs, .card:first-child, .btn-row .no-print, .sub { display: none !important; }
+  .grid { grid-template-columns: 1fr; }
+  .card { box-shadow: none; border: 1px solid #ddd; }
+  .table-wrap { max-height: none; overflow: visible; }
+}
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>BankTool Loan Calculator</h1>
+    <div class="sub">EMI, Loan Amount, Tenure, Interest Rate, and Repayment Schedule with moratorium options.</div><div class="tabs">
+  <button class="tab-btn active" data-tab="emi">EMI</button>
+  <button class="tab-btn" data-tab="loan">Loan Amount</button>
+  <button class="tab-btn" data-tab="tenure">Tenure</button>
+  <button class="tab-btn" data-tab="rate">Interest Rate</button>
+  <button class="tab-btn" data-tab="schedule">Repayment Schedule</button>
+</div>
+
+<section id="emi" class="panel active">
+  <div class="grid">
+    <div class="card">
+      <h2>EMI Calculator</h2>
+      <div class="form-grid">
+        <div class="field"><label>Loan Amount</label><input id="emiP" type="number" value="500000" min="0" step="0.01"></div>
+        <div class="field"><label>Annual ROI %</label><input id="emiR" type="number" value="10" min="0" step="0.01"></div>
+        <div class="field"><label>Tenure (Months)</label><input id="emiN" type="number" value="60" min="1" step="1"></div>
+        <div class="field"><label>Rounding</label>
+          <select id="emiRound">
+            <option value="2">2 decimals</option>
+            <option value="0">Nearest rupee</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button onclick="calcEMIBlock()">Calculate</button>
+        <button class="secondary" onclick="resetEMI()">Reset</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Result</h2>
+      <div id="emiOut"></div>
+    </div>
+  </div>
+</section>
+
+<section id="loan" class="panel">
+  <div class="grid">
+    <div class="card">
+      <h2>Loan Amount Calculator</h2>
+      <div class="form-grid">
+        <div class="field"><label>Affordable EMI</label><input id="loanEmi" type="number" value="12000" min="0" step="0.01"></div>
+        <div class="field"><label>Annual ROI %</label><input id="loanR" type="number" value="10" min="0" step="0.01"></div>
+        <div class="field"><label>Tenure (Months)</label><input id="loanN" type="number" value="60" min="1" step="1"></div>
+        <div class="field"><label>Rounding</label>
+          <select id="loanRound">
+            <option value="2">2 decimals</option>
+            <option value="0">Nearest rupee</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button onclick="calcLoanBlock()">Calculate</button>
+        <button class="secondary" onclick="resetLoan()">Reset</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Result</h2>
+      <div id="loanOut"></div>
+    </div>
+  </div>
+</section>
+
+<section id="tenure" class="panel">
+  <div class="grid">
+    <div class="card">
+      <h2>Tenure Calculator</h2>
+      <div class="form-grid">
+        <div class="field"><label>Loan Amount</label><input id="tenP" type="number" value="500000" min="0" step="0.01"></div>
+        <div class="field"><label>Annual ROI %</label><input id="tenR" type="number" value="10" min="0" step="0.01"></div>
+        <div class="field"><label>EMI</label><input id="tenEmi" type="number" value="10623.52" min="0" step="0.01"></div>
+        <div class="field"><label>Rounding</label>
+          <select id="tenRound">
+            <option value="2">2 decimals</option>
+            <option value="0">Nearest rupee</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button onclick="calcTenureBlock()">Calculate</button>
+        <button class="secondary" onclick="resetTenure()">Reset</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Result</h2>
+      <div id="tenOut"></div>
+    </div>
+  </div>
+</section>
+
+<section id="rate" class="panel">
+  <div class="grid">
+    <div class="card">
+      <h2>Interest Rate Calculator</h2>
+      <div class="form-grid">
+        <div class="field"><label>Loan Amount</label><input id="rateP" type="number" value="500000" min="0" step="0.01"></div>
+        <div class="field"><label>EMI</label><input id="rateEmi" type="number" value="10623.52" min="0" step="0.01"></div>
+        <div class="field"><label>Tenure (Months)</label><input id="rateN" type="number" value="60" min="1" step="1"></div>
+        <div class="field"><label>Precision</label>
+          <select id="ratePrec">
+            <option value="6">High</option>
+            <option value="4">Medium</option>
+            <option value="2">Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button onclick="calcRateBlock()">Calculate</button>
+        <button class="secondary" onclick="resetRate()">Reset</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Result</h2>
+      <div id="rateOut"></div>
+    </div>
+  </div>
+</section>
+
+<section id="schedule" class="panel">
+  <div class="grid">
+    <div class="card">
+      <h2>Repayment Schedule</h2>
+      <div class="form-grid">
+        <div class="field"><label>Loan Amount</label><input id="schP" type="number" value="500000" min="0" step="0.01"></div>
+        <div class="field"><label>Annual ROI %</label><input id="schR" type="number" value="10" min="0" step="0.01"></div>
+        <div class="field"><label>Tenure (Months)</label><input id="schN" type="number" value="60" min="1" step="1"></div>
+        <div class="field"><label>Start Date</label><input id="schDate" type="date"></div>
+
+        <div class="field"><label>Moratorium Type</label>
+          <select id="schMorType">
+            <option value="none">No Moratorium</option>
+            <option value="include">Full Moratorium (interest capitalized)</option>
+            <option value="principal">Principal Moratorium (interest payable)</option>
+            <option value="interest">Interest Moratorium (interest deferred)</option>
+          </select>
+        </div>
+        <div class="field"><label>Moratorium Months</label><input id="schMorMonths" type="number" value="0" min="0" step="1"></div>
+        <div class="field"><label>Post-moratorium treatment</label>
+          <select id="schAfterType">
+            <option value="keepTenure">Keep original EMI tenure</option>
+            <option value="keepEmi">Keep original EMI, extend tenure</option>
+          </select>
+        </div>
+        <div class="field"><label>Rounding</label>
+          <select id="schRound">
+            <option value="2">2 decimals</option>
+            <option value="0">Nearest rupee</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button onclick="generateScheduleBlock()">Generate</button>
+        <button class="secondary" onclick="window.print()">Print</button>
+        <button class="secondary no-print" onclick="downloadCSV()">CSV</button>
+      </div>
+      <div class="note warn">Assumption: monthly reducing balance. Dates move month-to-month on same calendar date where possible.</div>
+    </div>
+    <div class="card">
+      <h2>Schedule Output</h2>
+      <div id="schOut"></div>
+    </div>
+  </div>
+</section>
+
+  </div>  <script>
+    let lastScheduleRows = [];
+
+    const byId = (id) => document.getElementById(id);
+    const num = (id) => parseFloat(byId(id).value || 0);
+    const intval = (id) => parseInt(byId(id).value || 0, 10);
+    const fmt = (n, decimals = 2) => Number(n).toLocaleString('en-IN', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    const roundTo = (n, digits) => {
+      const f = Math.pow(10, digits);
+      return Math.round((n + Number.EPSILON) * f) / f;
+    };
+
+    function monthlyRate(annualRate) {
+      return annualRate / 12 / 100;
+    }
+
+    function calcEMI(P, annualRate, months) {
+      const r = monthlyRate(annualRate);
+      if (months <= 0) return 0;
+      if (r === 0) return P / months;
+      return P * r * Math.pow(1 + r, months) / (Math.pow(1 + r, months) - 1);
+    }
+
+    function calcLoanAmount(emi, annualRate, months) {
+      const r = monthlyRate(annualRate);
+      if (months <= 0) return 0;
+      if (r === 0) return emi * months;
+      return emi * ((Math.pow(1 + r, months) - 1) / (r * Math.pow(1 + r, months)));
+    }
+
+    function calcTenure(P, annualRate, emi) {
+      const r = monthlyRate(annualRate);
+      if (emi <= 0 || P <= 0) return NaN;
+      if (r === 0) return P / emi;
+      if (emi <= P * r) return NaN;
+      return Math.log(emi / (emi - P * r)) / Math.log(1 + r);
+    }
+
+    function calcRateFromEMI(P, emi, months, precisionDigits = 6) {
+      if (P <= 0 || emi <= 0 || months <= 0) return NaN;
+      let low = 0;
+      let high = 1; // 100% monthly ceiling, absurd but safe
+      for (let i = 0; i < 200; i++) {
+        let mid = (low + high) / 2;
+        let est;
+        if (mid === 0) est = P / months;
+        else est = P * mid * Math.pow(1 + mid, months) / (Math.pow(1 + mid, months) - 1);
+        if (est > emi) high = mid;
+        else low = mid;
+      }
+      const monthly = (low + high) / 2;
+      return roundTo(monthly * 12 * 100, precisionDigits);
+    }
+
+    function addMonths(dateStr, monthsToAdd) {
+      const d = new Date(dateStr + 'T00:00:00');
+      const day = d.getDate();
+      const result = new Date(d);
+      result.setMonth(result.getMonth() + monthsToAdd);
+      if (result.getDate() < day) result.setDate(0);
+      return result.toISOString().slice(0,10);
+    }
+
+    function statCard(k, v) {
+      return `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`;
+    }
+
+    function validatePositive(...vals) {
+      return vals.every(v => Number.isFinite(v) && v >= 0);
+    }
+
+    function calcEMIBlock() {
+      const P = num('emiP'), R = num('emiR'), N = intval('emiN'), rd = intval('emiRound');
+      if (!validatePositive(P,R,N) || N <= 0) {
+        byId('emiOut').innerHTML = `<div class="note warn">Enter valid positive values.</div>`;
+        return;
+      }
+      const emi = roundTo(calcEMI(P,R,N), rd);
+      const total = roundTo(emi * N, rd);
+      const interest = roundTo(total - P, rd);
+      byId('emiOut').innerHTML = `
+        <div class="result-grid">
+          ${statCard('EMI', '₹ ' + fmt(emi, rd))}
+          ${statCard('Total Interest', '₹ ' + fmt(interest, rd))}
+          ${statCard('Total Repayment', '₹ ' + fmt(total, rd))}
+          ${statCard('Monthly ROI', fmt(monthlyRate(R)*100, 4) + '%')}
+        </div>
+        <div class="note ok">Monthly reducing method used.</div>`;
+    }
+
+    function calcLoanBlock() {
+      const E = num('loanEmi'), R = num('loanR'), N = intval('loanN'), rd = intval('loanRound');
+      if (!validatePositive(E,R,N) || N <= 0) {
+        byId('loanOut').innerHTML = `<div class="note warn">Enter valid positive values.</div>`;
+        return;
+      }
+      const P = roundTo(calcLoanAmount(E,R,N), rd);
+      const total = roundTo(E * N, rd);
+      const interest = roundTo(total - P, rd);
+      byId('loanOut').innerHTML = `
+        <div class="result-grid">
+          ${statCard('Eligible Loan Amount', '₹ ' + fmt(P, rd))}
+          ${statCard('Total Repayment', '₹ ' + fmt(total, rd))}
+          ${statCard('Total Interest', '₹ ' + fmt(interest, rd))}
+        </div>
+        <div class="note ok">Useful for EMI-based loan sizing.</div>`;
+    }
+
+    function calcTenureBlock() {
+      const P = num('tenP'), R = num('tenR'), E = num('tenEmi'), rd = intval('tenRound');
+      if (!validatePositive(P,R,E) || E <= 0) {
+        byId('tenOut').innerHTML = `<div class="note warn">Enter valid positive values.</div>`;
+        return;
+      }
+      const months = calcTenure(P,R,E);
+      if (!Number.isFinite(months)) {
+        byId('tenOut').innerHTML = `<div class="note warn">EMI is too low for this loan and ROI. It may not amortize.</div>`;
+        return;
+      }
+      const total = roundTo(E * months, rd);
+      const interest = roundTo(total - P, rd);
+      byId('tenOut').innerHTML = `
+        <div class="result-grid">
+          ${statCard('Required Tenure', fmt(months, 2) + ' months')}
+          ${statCard('Approx Years', fmt(months/12, 2) + ' years')}
+          ${statCard('Total Interest', '₹ ' + fmt(interest, rd))}
+          ${statCard('Total Repayment', '₹ ' + fmt(total, rd))}
+        </div>
+        <div class="note ok">This is an analytical result. Practical schedules are rounded to full instalments.</div>`;
+    }
+
+    function calcRateBlock() {
+      const P = num('rateP'), E = num('rateEmi'), N = intval('rateN'), prec = intval('ratePrec');
+      if (!validatePositive(P,E,N) || N <= 0) {
+        byId('rateOut').innerHTML = `<div class="note warn">Enter valid positive values.</div>`;
+        return;
+      }
+      const rate = calcRateFromEMI(P,E,N,prec);
+      if (!Number.isFinite(rate)) {
+        byId('rateOut').innerHTML = `<div class="note warn">Unable to estimate rate from given inputs.</div>`;
+        return;
+      }
+      byId('rateOut').innerHTML = `
+        <div class="result-grid">
+          ${statCard('Estimated Annual ROI', fmt(rate, Math.min(prec,6)) + '%')}
+          ${statCard('Estimated Monthly ROI', fmt(rate/12, Math.min(prec,6)) + '%')}
+        </div>
+        <div class="note ok">Calculated using iterative approximation.</div>`;
+    }
+
+    function generateScheduleBlock() {
+      const P0 = num('schP');
+      const annualRate = num('schR');
+      const tenure = intval('schN');
+      const startDate = byId('schDate').value;
+      const morType = byId('schMorType').value;
+      const morMonths = intval('schMorMonths');
+      const afterType = byId('schAfterType').value;
+      const rd = intval('schRound');
+
+      if (!validatePositive(P0, annualRate, tenure, morMonths) || !startDate || tenure <= 0) {
+        byId('schOut').innerHTML = `<div class="note warn">Fill all schedule fields correctly.</div>`;
+        return;
+      }
+
+      const r = monthlyRate(annualRate);
+      let rows = [];
+      let bal = P0;
+      let totalInterest = 0;
+      let totalPrincipal = 0;
+      let deferredInterest = 0;
+      let capitalizedInterest = 0;
+      let baseEmi = calcEMI(P0, annualRate, tenure);
+      let effectivePrincipal = P0;
+
+      if (morType === 'include') {
+        for (let i = 1; i <= morMonths; i++) {
+          const interest = bal * r;
+          capitalizedInterest += interest;
+          totalInterest += interest;
+          bal += interest;
+          rows.push({
+            n: i,
+            date: addMonths(startDate, i-1),
+            opening: roundTo(bal - interest, rd),
+            interest: roundTo(interest, rd),
+            principal: roundTo(0, rd),
+            emi: roundTo(0, rd),
+            closing: roundTo(bal, rd),
+            tag: 'Moratorium'
+          });
+        }
+        effectivePrincipal = bal;
+      }
+
+      let normalMonths = tenure;
+      let emi = baseEmi;
+
+      if (morType === 'include') {
+        if (afterType === 'keepTenure') {
+          normalMonths = tenure;
+          emi = calcEMI(effectivePrincipal, annualRate, normalMonths);
+        } else {
+          normalMonths = Math.ceil(calcTenure(effectivePrincipal, annualRate, baseEmi));
+          emi = baseEmi;
+        }
+      }
+
+      if (morType === 'principal') {
+        for (let i = 1; i <= morMonths; i++) {
+          const interest = bal * r;
+          totalInterest += interest;
+          rows.push({
+            n: i,
+            date: addMonths(startDate, i-1),
+            opening: roundTo(bal, rd),
+            interest: roundTo(interest, rd),
+            principal: roundTo(0, rd),
+            emi: roundTo(interest, rd),
+            closing: roundTo(bal, rd),
+            tag: 'Principal Moratorium'
+          });
+        }
+        if (afterType === 'keepTenure') {
+          normalMonths = tenure;
+          emi = calcEMI(P0, annualRate, normalMonths);
+        } else {
+          normalMonths = tenure;
+          emi = baseEmi;
+        }
+      }
+
+      if (morType === 'interest') {
+        for (let i = 1; i <= morMonths; i++) {
+          const interest = bal * r;
+          deferredInterest += interest;
+          totalInterest += interest;
+          rows.push({
+            n: i,
+            date: addMonths(startDate, i-1),
+            opening: roundTo(bal, rd),
+            interest: roundTo(interest, rd),
+            principal: roundTo(0, rd),
+            emi: roundTo(0, rd),
+            closing: roundTo(bal, rd),
+            tag: 'Interest Moratorium'
+          });
+        }
+        effectivePrincipal = bal + deferredInterest;
+        if (afterType === 'keepTenure') {
+          normalMonths = tenure;
+          emi = calcEMI(effectivePrincipal, annualRate, normalMonths);
+        } else {
+          normalMonths = Math.ceil(calcTenure(effectivePrincipal, annualRate, baseEmi));
+          emi = baseEmi;
+        }
+        bal = effectivePrincipal;
+      }
+
+      if (morType === 'none') {
+        emi = baseEmi;
+        normalMonths = tenure;
+      }
+
+      if (morType === 'principal') {
+        bal = P0;
+      } else if (morType === 'include') {
+        bal = effectivePrincipal;
+      } else if (morType === 'none') {
+        bal = P0;
+      }
+
+      let startIndex = rows.length;
+      let i = 1;
+      while (bal > 0.01 && i <= normalMonths + 5) {
+        const interest = bal * r;
+        let principal = emi - interest;
+        if (principal > bal) {
+          principal = bal;
+          emi = principal + interest;
+        }
+        if (principal < 0) {
+          byId('schOut').innerHTML = `<div class="note warn">EMI is insufficient. Schedule cannot amortize.</div>`;
+          return;
+        }
+        const opening = bal;
+        bal -= principal;
+        totalInterest += interest;
+        totalPrincipal += principal;
+        rows.push({
+          n: startIndex + i,
+          date: addMonths(startDate, startIndex + i - 1),
+          opening: roundTo(opening, rd),
+          interest: roundTo(interest, rd),
+          principal: roundTo(principal, rd),
+          emi: roundTo(emi, rd),
+          closing: roundTo(Math.max(bal, 0), rd),
+          tag: 'Repayment'
+        });
+        i++;
+      }
+
+      lastScheduleRows = rows;
+      const totalRepayment = rows.reduce((s, r) => s + r.emi, 0);
+      const effectiveTenure = rows.length;
+
+      const summary = `
+        <div class="result-grid">
+          ${statCard('Base EMI', '₹ ' + fmt(roundTo(baseEmi, rd), rd))}
+          ${statCard('Effective EMI', '₹ ' + fmt(roundTo(emi, rd), rd))}
+          ${statCard('Effective Tenure', effectiveTenure + ' months')}
+          ${statCard('Total Repayment', '₹ ' + fmt(roundTo(totalRepayment, rd), rd))}
+          ${statCard('Total Interest', '₹ ' + fmt(roundTo(totalInterest, rd), rd))}
+          ${statCard('Capitalized / Deferred Interest', '₹ ' + fmt(roundTo(capitalizedInterest + deferredInterest, rd), rd))}
+        </div>`;
+
+      const note = `<div class="note ${morType === 'none' ? 'ok' : 'warn'}">
+        Moratorium type: <b>${morType}</b>. Post-treatment: <b>${afterType}</b>.
+      </div>`;
+
+      const table = `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Inst.</th>
+                <th>Date</th>
+                <th>Opening</th>
+                <th>Interest</th>
+                <th>Principal</th>
+                <th>EMI / Payment</th>
+                <th>Closing</th>
+                <th>Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(r => `
+                <tr>
+                  <td>${r.n}</td>
+                  <td>${r.date}</td>
+                  <td>${fmt(r.opening, rd)}</td>
+                  <td>${fmt(r.interest, rd)}</td>
+                  <td>${fmt(r.principal, rd)}</td>
+                  <td>${fmt(r.emi, rd)}</td>
+                  <td>${fmt(r.closing, rd)}</td>
+                  <td style="text-align:left">${r.tag}</td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
+
+      byId('schOut').innerHTML = summary + note + table;
+    }
+
+    function downloadCSV() {
+      if (!lastScheduleRows.length) {
+        alert('Generate schedule first.');
+        return;
+      }
+      const header = ['Inst', 'Date', 'Opening', 'Interest', 'Principal', 'EMI', 'Closing', 'Type'];
+      const lines = [header.join(',')].concat(lastScheduleRows.map(r => [r.n, r.date, r.opening, r.interest, r.principal, r.emi, r.closing, '"' + r.tag + '"'].join(',')));
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'repayment_schedule.csv';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function resetEMI() {
+      byId('emiP').value = 500000; byId('emiR').value = 10; byId('emiN').value = 60; byId('emiRound').value = 2; byId('emiOut').innerHTML = '';
+    }
+    function resetLoan() {
+      byId('loanEmi').value = 12000; byId('loanR').value = 10; byId('loanN').value = 60; byId('loanRound').value = 2; byId('loanOut').innerHTML = '';
+    }
+    function resetTenure() {
+      byId('tenP').value = 500000; byId('tenR').value = 10; byId('tenEmi').value = 10623.52; byId('tenRound').value = 2; byId('tenOut').innerHTML = '';
+    }
+    function resetRate() {
+      byId('rateP').value = 500000; byId('rateEmi').value = 10623.52; byId('rateN').value = 60; byId('ratePrec').value = 6; byId('rateOut').innerHTML = '';
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        byId(btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    byId('schDate').value = new Date().toISOString().slice(0,10);
+    calcEMIBlock();
+    calcLoanBlock();
+    calcTenureBlock();
+    calcRateBlock();
+    generateScheduleBlock();
+  </script></body>
+</html>
